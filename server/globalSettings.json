@@ -1,0 +1,9 @@
+{
+  "serverName": "Phsycolandia",
+  "serverPassword": "Weed420",
+  "adminPassword": "420710",
+  "rconPort": 32330,
+  "maxPlayers": 4,
+  "enableRcon": true,
+  "allowExternalAccess": true
+}
