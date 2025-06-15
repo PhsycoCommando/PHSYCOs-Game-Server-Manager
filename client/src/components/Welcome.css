@@ -10,9 +10,10 @@
   text-align: center;
   margin-bottom: 40px;
   padding: 30px 20px;
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(33, 150, 243, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(33, 150, 243, 0.2) 100%);
   border-radius: 12px;
-  border: 1px solid rgba(76, 175, 80, 0.3);
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  backdrop-filter: blur(15px);
 }
 
 .welcome-header h1 {

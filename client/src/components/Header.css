@@ -47,20 +47,31 @@
   justify-content: center;
 }
 
-/* Make both buttons look the same - like the donate button */
+/* Make both buttons the same size and style */
 .feedback-btn {
-  background: linear-gradient(45deg, #4CAF50, #45a049) !important;
+  background: linear-gradient(45deg, #2196F3, #1976D2) !important; /* Light blue like Support & Feedback */
   color: white !important;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  height: 40px;
+  min-width: 120px; /* Match donate button width */
 }
 
 .feedback-btn:hover {
-  background: linear-gradient(45deg, #45a049, #3d8b40) !important;
+  background: linear-gradient(45deg, #1976D2, #1565C0) !important;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
 }
 
 .donate-btn {
@@ -70,6 +81,17 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  height: 40px;
+  min-width: 120px; /* Match feedback button width */
 }
 
 .donate-btn:hover {
