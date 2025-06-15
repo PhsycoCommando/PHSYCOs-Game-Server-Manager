@@ -92,13 +92,15 @@ const Header: React.FC = () => {
             className="header-btn feedback-btn"
             onClick={() => setShowFeedbackModal(true)}
           >
-            💬 FEEDBACK
+            <span>💬</span>
+            <span>FEEDBACK</span>
           </button>
           <button 
             className="header-btn donate-btn"
             onClick={() => window.open(DONATION_LINKS.custom, '_blank')}
           >
-            ❤️ DONATE
+            <span>❤️</span>
+            <span>DONATE</span>
           </button>
         </div>
       </header>

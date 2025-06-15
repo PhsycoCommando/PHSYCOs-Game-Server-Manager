@@ -66,6 +66,8 @@
   letter-spacing: 0.5px;
   height: 40px;
   min-width: 120px; /* Match donate button width */
+  flex-direction: row; /* Ensure horizontal layout */
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 .feedback-btn:hover {
@@ -92,6 +94,8 @@
   letter-spacing: 0.5px;
   height: 40px;
   min-width: 120px; /* Match feedback button width */
+  flex-direction: row; /* Ensure horizontal layout */
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 .donate-btn:hover {
