@@ -13,16 +13,30 @@
     --background-image: url('./src/assets/images/background.jpg');
 }
 
+/* CSS Reset for full screen */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: var(--font-family);
     background-color: var(--primary-bg);
     color: var(--primary-text);
     margin: 0;
     padding: 0;
+    width: 100vw;
     height: 100vh;
     overflow: hidden;
     position: relative;
-    min-width: 100vw;
     /* Apply background directly to body */
     background-image: 
         url('/background.jpg'),
@@ -37,11 +51,14 @@ body {
 
 #root {
     height: 100vh;
+    width: 100vw;
     display: flex;
-    justify-content: center;
+    /* Remove centering - let content fill full width */
     align-items: stretch;
     /* Remove background overlay from root - make it fully transparent */
     background-color: transparent;
+    margin: 0;
+    padding: 0;
 }
 
 /* Main App Layout - Make nearly transparent */
@@ -49,12 +66,12 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    width: 100vw;
     color: #fff;
-    width: 100%;
-    max-width: none; /* Remove max-width constraint */
     position: relative;
     z-index: 1;
-    padding: 0 10px; /* Reduce padding */
+    padding: 0; /* Remove all padding */
+    margin: 0; /* Remove all margin */
     box-sizing: border-box;
     /* Make app container nearly transparent */
     background-color: transparent;
@@ -71,8 +88,8 @@ body {
     align-items: center;
     padding: 0 20px;
     height: var(--header-height);
-    border-radius: 8px;
-    margin-bottom: 10px;
+    border-radius: 0; /* Remove border radius for full width */
+    margin: 0; /* Remove margin */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -102,8 +119,8 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     position: relative;
     z-index: 2;
-    border-radius: 8px;
-    margin-bottom: 10px;
+    border-radius: 0; /* Remove border radius for full width */
+    margin: 0; /* Remove margin */
 }
 
 .tab-navigation {
@@ -146,7 +163,7 @@ body {
 .sidebar {
     width: 250px;
     background-color: transparent;
-    padding: 10px; /* Reduce padding */
+    padding: 5px; /* Minimal padding */
     overflow-y: auto;
     border-right: none;
     flex-shrink: 0; /* Prevent shrinking */
@@ -170,7 +187,7 @@ body {
 /* Main content area - Make transparent */
 .main {
     flex: 1;
-    padding: 10px; /* Reduce padding */
+    padding: 5px; /* Minimal padding */
     background-color: transparent;
     overflow-y: auto;
     box-shadow: none;
@@ -200,8 +217,8 @@ body {
     text-align: center;
     font-size: 12px;
     color: #ccc;
-    border-radius: 8px;
-    margin-top: 10px;
+    border-radius: 0; /* Remove border radius for full width */
+    margin: 0; /* Remove margin */
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
