@@ -12,7 +12,9 @@ interface Mod {
   size: string;
   lastUpdated: string;
   tags: string[];
-  steamUrl: string;
+  steamUrl?: string;
+  curseforgeUrl?: string;
+  source: string;
   installed: boolean;
   enabled: boolean;
 }
@@ -284,12 +286,12 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
             </button>
           )}
           <a
-            href={mod.steamUrl}
+            href={mod.source === 'curseforge' ? mod.curseforgeUrl : mod.steamUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="mod-btn mod-btn-view"
           >
-            View on Steam
+            {mod.source === 'curseforge' ? 'View on CurseForge' : 'View on Steam'}
           </a>
         </div>
       </div>
@@ -306,7 +308,7 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
             className={`mod-tab ${activeTab === 'browse' ? 'active' : ''}`}
             onClick={() => setActiveTab('browse')}
           >
-            Browse Workshop
+            Browse Mods
           </button>
           <button
             className={`mod-tab ${activeTab === 'installed' ? 'active' : ''}`}
