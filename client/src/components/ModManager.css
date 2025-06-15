@@ -258,6 +258,18 @@
   line-height: 1.2;
 }
 
+.mod-description-compact {
+  color: #bdc3c7;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  margin: 4px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .mod-stats-compact {
   display: flex;
   gap: 16px;

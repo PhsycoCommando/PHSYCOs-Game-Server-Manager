@@ -1279,10 +1279,17 @@ router.get('/status/:serverName/:modId', (req, res) => {
 
 // Reorder mods
 router.post('/reorder', (req, res) => {
+  console.log('=== REORDER ENDPOINT CALLED ===');
+  console.log('Request body:', req.body);
+  
   try {
     const { serverName, modIds } = req.body;
     
+    console.log('Parsed serverName:', serverName);
+    console.log('Parsed modIds:', modIds);
+    
     if (!serverName || !Array.isArray(modIds)) {
+      console.log('Validation failed - missing serverName or modIds not array');
       return res.status(400).json({
         success: false,
         error: 'serverName and modIds array are required'
@@ -1292,11 +1299,15 @@ router.post('/reorder', (req, res) => {
     console.log(`Reordering mods for server: ${serverName}`, modIds);
     
     const configContent = readServerConfig(serverName);
+    console.log('Config content loaded successfully');
+    
     const currentMods = parseActiveMods(configContent);
+    console.log('Current mods:', currentMods);
     
     // Validate that all provided mod IDs are currently installed
     const invalidMods = modIds.filter(id => !currentMods.includes(id));
     if (invalidMods.length > 0) {
+      console.log('Invalid mods found:', invalidMods);
       return res.status(400).json({
         success: false,
         error: `Some mods are not installed: ${invalidMods.join(', ')}`
@@ -1305,7 +1316,10 @@ router.post('/reorder', (req, res) => {
     
     // Update config with new mod order
     const updatedConfig = updateActiveMods(configContent, modIds);
+    console.log('Config updated, writing to file...');
+    
     writeServerConfig(serverName, updatedConfig);
+    console.log('Config written successfully');
     
     res.json({
       success: true,

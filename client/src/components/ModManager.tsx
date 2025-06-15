@@ -37,14 +37,39 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [reordering, setReordering] = useState(false);
 
+  const loadInstalledModsCount = async () => {
+    try {
+      const response = await fetch(`/api/mods/installed/${encodeURIComponent(selectedServer)}`);
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Update the installed mods array to get the count
+        setInstalledMods(data.installedMods || []);
+      }
+    } catch (err) {
+      console.error('Error loading installed mods count:', err);
+    }
+  };
+
   // Load mods when component mounts or server changes
   useEffect(() => {
-    if (activeTab === 'browse') {
-      loadMods();
-    } else {
-      loadInstalledMods();
+    if (selectedServer) {
+      if (activeTab === 'browse') {
+        loadMods();
+      } else {
+        loadInstalledMods();
+      }
+      // Always load the count for the tab display
+      loadInstalledModsCount();
     }
-  }, [selectedServer, activeTab, searchTerm, sortBy, timeFilter]);
+  }, [selectedServer, activeTab]);
+
+  // Load mods when search/filter parameters change (only for browse tab)
+  useEffect(() => {
+    if (selectedServer && activeTab === 'browse') {
+      loadMods();
+    }
+  }, [searchTerm, sortBy, timeFilter]);
 
   const loadMods = async () => {
     setLoading(true);
@@ -133,13 +158,15 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
         )
       );
 
-      // Show success message
-      setMessage(`${mod.name} installed successfully! Restart server to load the mod.`);
-      
-      // Refresh installed mods if on that tab
-      if (activeTab === 'installed') {
-        setTimeout(() => loadInstalledMods(), 1000);
+      // Refresh mods list and installed count
+      if (activeTab === 'browse') {
+        loadMods();
+      } else {
+        loadInstalledMods();
       }
+      loadInstalledModsCount();
+
+      setMessage(`Mod "${mod.name}" installed successfully!`);
     } catch (err) {
       console.error('Error installing mod:', err);
       setError(err instanceof Error ? err.message : 'Failed to install mod');
@@ -166,21 +193,22 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
         throw new Error(data.message || 'Failed to uninstall mod');
       }
 
-      // Update mod status in browse list
-      setMods(prevMods => 
-        prevMods.map(m => 
-          m.id === mod.id 
-            ? { ...m, installed: false, enabled: false }
-            : m
-        )
-      );
+      // Update mod status
+      const updateMod = (m: Mod) => 
+        m.id === mod.id ? { ...m, installed: false, enabled: false } : m;
 
-      // Remove from installed mods list
-      setInstalledMods(prevMods => 
-        prevMods.filter(m => m.id !== mod.id)
-      );
+      setMods(prevMods => prevMods.map(updateMod));
+      setInstalledMods(prevMods => prevMods.filter(m => m.id !== mod.id));
 
-      setMessage(`${mod.name} uninstalled successfully! Restart server to apply changes.`);
+      // Refresh mods list and installed count
+      if (activeTab === 'browse') {
+        loadMods();
+      } else {
+        loadInstalledMods();
+      }
+      loadInstalledModsCount();
+
+      setMessage(`Mod "${mod.name}" uninstalled successfully!`);
     } catch (err) {
       console.error('Error uninstalling mod:', err);
       setError(err instanceof Error ? err.message : 'Failed to uninstall mod');
@@ -284,6 +312,9 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
         <div className="mod-name-author">
           <h4 className="mod-name">{mod.name}</h4>
           <span className="mod-author">by {mod.author}</span>
+        </div>
+        <div className="mod-description-compact">
+          {mod.description}
         </div>
         <div className="mod-stats-compact">
           <span className="mod-downloads">{formatNumber(mod.downloads)} downloads</span>
