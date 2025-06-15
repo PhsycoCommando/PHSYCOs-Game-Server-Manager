@@ -36,6 +36,8 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
   const [message, setMessage] = useState<string | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [reordering, setReordering] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const loadInstalledModsCount = async () => {
     try {
@@ -131,24 +133,10 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
 
   const handleInstallMod = async (mod: Mod) => {
     try {
-      const response = await fetch('/api/mods/install', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          serverName: selectedServer,
-          modId: mod.id,
-          curseforgeId: mod.curseforgeId || mod.id
-        }),
-      });
-
-      const data = await response.json();
+      // Add mod to installed list locally
+      const newMod = { ...mod, installed: true, enabled: true };
+      setInstalledMods(prevMods => [...prevMods, newMod]);
       
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to install mod');
-      }
-
       // Update mod status in browse list
       setMods(prevMods => 
         prevMods.map(m => 
@@ -158,15 +146,10 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
         )
       );
 
-      // Refresh mods list and installed count
-      if (activeTab === 'browse') {
-        loadMods();
-      } else {
-        loadInstalledMods();
-      }
-      loadInstalledModsCount();
-
-      setMessage(`Mod "${mod.name}" installed successfully!`);
+      // Mark changes as pending
+      setPendingChanges(true);
+      setMessage(`Mod "${mod.name}" added to install queue. Click "Save Configuration" to apply.`);
+      
     } catch (err) {
       console.error('Error installing mod:', err);
       setError(err instanceof Error ? err.message : 'Failed to install mod');
@@ -175,43 +158,62 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
 
   const handleUninstallMod = async (mod: Mod) => {
     try {
-      const response = await fetch('/api/mods/uninstall', {
+      // Remove mod from installed list locally
+      setInstalledMods(prevMods => prevMods.filter(m => m.id !== mod.id));
+      
+      // Update mod status in browse list
+      setMods(prevMods => 
+        prevMods.map(m => 
+          m.id === mod.id 
+            ? { ...m, installed: false, enabled: false }
+            : m
+        )
+      );
+
+      // Mark changes as pending
+      setPendingChanges(true);
+      setMessage(`Mod "${mod.name}" removed from install queue. Click "Save Configuration" to apply.`);
+      
+    } catch (err) {
+      console.error('Error uninstalling mod:', err);
+      setError(err instanceof Error ? err.message : 'Failed to uninstall mod');
+    }
+  };
+
+  const handleSaveConfiguration = async () => {
+    try {
+      setSaving(true);
+      
+      // Extract mod IDs and names in the current order
+      const modIds = installedMods.map(mod => mod.curseforgeId || mod.id);
+      const modNames = installedMods.map(mod => mod.name);
+      
+      const response = await fetch('/api/mods/save-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           serverName: selectedServer,
-          modId: mod.id,
-          curseforgeId: mod.curseforgeId || mod.id
+          modIds: modIds,
+          modNames: modNames
         }),
       });
 
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to uninstall mod');
+        throw new Error(data.message || 'Failed to save configuration');
       }
 
-      // Update mod status
-      const updateMod = (m: Mod) => 
-        m.id === mod.id ? { ...m, installed: false, enabled: false } : m;
-
-      setMods(prevMods => prevMods.map(updateMod));
-      setInstalledMods(prevMods => prevMods.filter(m => m.id !== mod.id));
-
-      // Refresh mods list and installed count
-      if (activeTab === 'browse') {
-        loadMods();
-      } else {
-        loadInstalledMods();
-      }
-      loadInstalledModsCount();
-
-      setMessage(`Mod "${mod.name}" uninstalled successfully!`);
+      setPendingChanges(false);
+      setMessage('Configuration saved successfully! Restart server to apply changes.');
+      
     } catch (err) {
-      console.error('Error uninstalling mod:', err);
-      setError(err instanceof Error ? err.message : 'Failed to uninstall mod');
+      console.error('Error saving configuration:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save configuration');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -219,29 +221,10 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
     try {
       setReordering(true);
       
-      // Extract mod IDs in the new order
-      const modIds = newOrder.map(mod => mod.curseforgeId || mod.id);
-      
-      const response = await fetch('/api/mods/reorder', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          serverName: selectedServer,
-          modIds: modIds
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to reorder mods');
-      }
-
       // Update local state with new order
       setInstalledMods(newOrder);
-      setMessage('Mod load order updated successfully! Restart server to apply changes.');
+      setPendingChanges(true);
+      setMessage('Mod order updated. Click "Save Configuration" to apply changes.');
       
     } catch (err) {
       console.error('Error reordering mods:', err);
@@ -486,6 +469,23 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
             Drag and drop mods to reorder them. Load order is important - some mods require specific positioning to work correctly.
             Changes will be saved automatically and applied on server restart.
           </span>
+        </div>
+      )}
+
+      {activeTab === 'installed' && installedMods.length > 0 && (
+        <div className="mod-config-controls">
+          <button
+            className={`save-config-btn ${pendingChanges ? 'has-changes' : ''}`}
+            onClick={handleSaveConfiguration}
+            disabled={saving || !pendingChanges}
+          >
+            {saving ? 'Saving...' : pendingChanges ? 'Save Configuration' : 'Configuration Saved'}
+          </button>
+          {pendingChanges && (
+            <span className="pending-changes-notice">
+              ⚠️ You have unsaved changes
+            </span>
+          )}
         </div>
       )}
 
