@@ -40,6 +40,12 @@ const Tabs: React.FC<TabsProps> = ({ activeTab, onTabChange }) => {
         Config Editor
       </button>
       <button 
+        className={`tab-button ${activeTab === 'mods' ? 'active' : ''}`}
+        onClick={() => onTabChange('mods')}
+      >
+        🧩 Mod Manager
+      </button>
+      <button 
         className={`tab-button ${activeTab === 'ports' ? 'active' : ''}`}
         onClick={() => onTabChange('ports')}
       >

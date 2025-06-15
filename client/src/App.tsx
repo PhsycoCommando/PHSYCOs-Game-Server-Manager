@@ -11,6 +11,7 @@ import Instructions from './components/Instructions';
 import Support from './components/Support';
 import Header from './components/Header';
 import Tabs from './components/Tabs';
+import ModManager from './components/ModManager';
 import type { ServerData, PortData } from './types';
 
 const API_URL = '/api';
@@ -18,7 +19,7 @@ const API_URL = '/api';
 function App() {
     const [servers, setServers] = useState<ServerData[]>([]);
     const [selectedServer, setSelectedServer] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState('welcome');
+    const [activeTab, setActiveTab] = useState<'welcome' | 'instructions' | 'console' | 'rcon' | 'config' | 'ports' | 'settings' | 'support' | 'mods'>('welcome');
     const [portForwarding, setPortForwarding] = useState<PortData[]>([]);
 
     const fetchServers = async () => {
@@ -117,6 +118,18 @@ function App() {
                 );
             case 'support':
                 return <Support />;
+            case 'mods':
+                return (
+                    <div className="console-container">
+                        <h2>Mod Manager</h2>
+                        {selectedServer && (
+                            <ModManager selectedServer={selectedServer} />
+                        )}
+                        {!selectedServer && (
+                            <p className="select-server-prompt">Select a server to manage its mods</p>
+                        )}
+                    </div>
+                );
             default:
                 return null;
         }

@@ -11,6 +11,7 @@ const filesRouter = require('./routes/files');
 const configRouter = require('./routes/config');
 const globalSettingsRouter = require('./routes/globalSettings');
 const feedbackRouter = require('./routes/feedback');
+const modsRouter = require('./routes/mods');
 const serverManager = require('./utils/serverProcessManager');
 
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/files', filesRouter);
 app.use('/api/config', configRouter);
 app.use('/api/global-settings', globalSettingsRouter);
 app.use('/api/feedback', feedbackRouter);
+app.use('/api/mods', modsRouter);
 
 // Port forwarding route
 app.get('/api/ports', async (req, res) => {
