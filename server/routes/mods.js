@@ -92,7 +92,7 @@ const modCache = new Map();
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 // CurseForge mod data (real mods from CurseForge)
-function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 20) {
+function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
   console.log(`Getting CurseForge mods for game ID: ${gameId}, search: "${searchTerm}"`);
   
   const curseForgeMods = [
@@ -736,7 +736,7 @@ router.get('/search', async (req, res) => {
       sortBy = 'popular', 
       timeFilter = 'all',
       page = 1,
-      pageSize = 25
+      pageSize = 50
     } = req.query;
 
     console.log(`Mod search request for: ${serverName}`);
