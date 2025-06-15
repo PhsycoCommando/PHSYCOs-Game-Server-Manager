@@ -863,11 +863,50 @@ router.get('/search', async (req, res) => {
         const configContent = readServerConfig(serverName);
         const installedModIds = parseActiveMods(configContent);
         
+        // Create a map for quick lookup
+        const modMap = new Map();
+        mods.forEach(mod => {
+          // Add entries for both id and curseforgeId to ensure proper lookup
+          modMap.set(mod.id, mod);
+          if (mod.curseforgeId) {
+            modMap.set(mod.curseforgeId, mod);
+          }
+        });
+        
+        // Build installed mods array in the correct order
+        const installedMods = installedModIds.map(modId => {
+          const mod = modMap.get(modId);
+          if (mod) {
+            return {
+              ...mod,
+              installed: true,
+              enabled: true // All installed mods are enabled in ARK
+            };
+          }
+          // If mod not found in our list, create a placeholder
+          return {
+            id: modId,
+            curseforgeId: modId,
+            name: `Unknown Mod (${modId})`,
+            description: 'This mod is installed but not in our database.',
+            author: 'Unknown',
+            downloads: 0,
+            rating: 0,
+            size: 'Unknown',
+            lastUpdated: 'Unknown',
+            tags: ['Unknown'],
+            curseforgeUrl: `https://www.curseforge.com/ark-survival-ascended/mods/${modId}`,
+            installed: true,
+            enabled: true,
+            source: 'curseforge'
+          };
+        }).filter(Boolean);
+        
         // Update installation status for each mod
         mods = mods.map(mod => ({
           ...mod,
-          installed: installedModIds.includes(mod.curseforgeId) || installedModIds.includes(mod.id),
-          enabled: installedModIds.includes(mod.curseforgeId) || installedModIds.includes(mod.id)
+          installed: installedModIds.includes(mod.id) || (mod.curseforgeId && installedModIds.includes(mod.curseforgeId)),
+          enabled: installedModIds.includes(mod.id) || (mod.curseforgeId && installedModIds.includes(mod.curseforgeId))
         }));
         
         console.log(`Updated installation status for ${mods.length} mods. Installed: ${installedModIds.length}`);
@@ -1093,7 +1132,11 @@ router.get('/installed/:serverName', (req, res) => {
     // Create a map for quick lookup
     const modMap = new Map();
     allMods.forEach(mod => {
-      modMap.set(mod.curseforgeId || mod.id, mod);
+      // Add entries for both id and curseforgeId to ensure proper lookup
+      modMap.set(mod.id, mod);
+      if (mod.curseforgeId) {
+        modMap.set(mod.curseforgeId, mod);
+      }
     });
     
     // Build installed mods array in the correct order
