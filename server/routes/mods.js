@@ -7,6 +7,25 @@ const STEAM_API_BASE = 'https://api.steampowered.com';
 const CURSEFORGE_API_BASE = 'https://api.curseforge.com/v1';
 const PUBLISHED_FILE_DETAILS = `${STEAM_API_BASE}/ISteamRemoteStorage/GetPublishedFileDetails/v1/`;
 
+// Server name to game name mapping
+const SERVER_TO_GAME_MAPPING = {
+  'arksa_server': 'ARK: Survival Ascended',
+  'arkse_server': 'ARK: Survival Evolved', 
+  'valheim_server': 'Valheim',
+  'pz_server': 'Project Zomboid',
+  'palworld_server': 'Palworld',
+  'enshrouded_server': 'Enshrouded',
+  'forest_server': 'The Forest',
+  // Legacy mappings
+  'ARK: Survival Ascended': 'ARK: Survival Ascended',
+  'ARK: Survival Evolved': 'ARK: Survival Evolved',
+  'Valheim': 'Valheim',
+  'Project Zomboid': 'Project Zomboid',
+  'Palworld': 'Palworld',
+  'Enshrouded': 'Enshrouded',
+  'The Forest': 'The Forest'
+};
+
 // Game configurations with their respective APIs and IDs
 const GAME_CONFIGS = {
   'ARK: Survival Ascended': {
@@ -330,13 +349,17 @@ router.get('/search', async (req, res) => {
 
     console.log(`Mod search request for: ${serverName}`);
 
-    const gameConfig = GAME_CONFIGS[serverName];
+    // Map server name to game name
+    const gameName = SERVER_TO_GAME_MAPPING[serverName] || serverName;
+    console.log(`Mapped ${serverName} to game: ${gameName}`);
+
+    const gameConfig = GAME_CONFIGS[gameName];
     
     if (!gameConfig) {
-      console.log(`No mod support configured for: ${serverName}`);
+      console.log(`No mod support configured for: ${gameName} (server: ${serverName})`);
       return res.json({
-        mods: getMockMods(serverName),
-        message: `Mod integration not available for ${serverName}. Showing example mods.`,
+        mods: getMockMods(gameName),
+        message: `Mod integration not available for ${gameName}. Showing example mods.`,
         totalCount: 3,
         hasMore: false,
         source: 'mock'
@@ -349,24 +372,24 @@ router.get('/search', async (req, res) => {
 
     try {
       if (gameConfig.api === 'curseforge') {
-        console.log(`Using CurseForge API for ${serverName}`);
+        console.log(`Using CurseForge API for ${gameName} (server: ${serverName})`);
         mods = await getCurseForgeModDetails(gameConfig.gameId, search);
         message = mods.length > 0 ? 
-          `Found ${mods.length} mods from CurseForge for ${serverName}` :
+          `Found ${mods.length} mods from CurseForge for ${gameName}` :
           `CurseForge API unavailable. Note: CurseForge requires an API key for production use.`;
         
         if (mods.length === 0) {
-          mods = getMockMods(serverName);
+          mods = getMockMods(gameName);
           source = 'mock';
           message += ' Showing example mods instead.';
         }
       } else if (gameConfig.api === 'steam') {
-        console.log(`Using Steam Workshop API for ${serverName}`);
+        console.log(`Using Steam Workshop API for ${gameName} (server: ${serverName})`);
         
         if (search.trim()) {
           // For search, use mock data for now since Steam search API is more complex
           console.log(`Steam Workshop search not implemented, showing filtered mock results for: ${search}`);
-          mods = getMockMods(serverName).filter(mod => 
+          mods = getMockMods(gameName).filter(mod => 
             mod.name.toLowerCase().includes(search.toLowerCase()) ||
             mod.description.toLowerCase().includes(search.toLowerCase()) ||
             mod.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase()))
@@ -377,22 +400,22 @@ router.get('/search', async (req, res) => {
           // Get popular mods for this game
           const popularModIds = gameConfig.popularMods || [];
           if (popularModIds.length > 0) {
-            console.log(`Fetching ${popularModIds.length} popular mods for ${serverName}`);
+            console.log(`Fetching ${popularModIds.length} popular mods for ${gameName} (server: ${serverName})`);
             mods = await getSteamModDetails(popularModIds);
             
             if (mods.length === 0) {
               console.log('Steam API failed, using mock data');
-              mods = getMockMods(serverName);
+              mods = getMockMods(gameName);
               source = 'mock';
               message = 'Steam Workshop API unavailable. Showing example mods instead.';
             } else {
-              message = `Found ${mods.length} popular mods from Steam Workshop for ${serverName}`;
+              message = `Found ${mods.length} popular mods from Steam Workshop for ${gameName}`;
             }
           } else {
-            console.log(`No popular mods configured for ${serverName}, using mock data`);
-            mods = getMockMods(serverName);
+            console.log(`No popular mods configured for ${gameName}, using mock data`);
+            mods = getMockMods(gameName);
             source = 'mock';
-            message = `No popular mods configured for ${serverName}. Showing example mods.`;
+            message = `No popular mods configured for ${gameName}. Showing example mods.`;
           }
         }
       }
@@ -432,18 +455,19 @@ router.get('/search', async (req, res) => {
 
     } catch (apiError) {
       console.error(`${gameConfig.api} API error:`, apiError.message);
-      mods = getMockMods(serverName);
+      mods = getMockMods(gameName);
       source = 'mock';
       message = `${gameConfig.api} API error. Showing example mods instead.`;
     }
 
-    console.log(`Returning ${mods.length} mods for ${serverName} from ${source}`);
+    console.log(`Returning ${mods.length} mods for ${gameName} (server: ${serverName}) from ${source}`);
 
     res.json({
       mods,
       totalCount: mods.length,
       hasMore: false,
       serverName,
+      gameName,
       gameConfig: gameConfig.api === 'steam' ? { appId: gameConfig.appId } : { gameId: gameConfig.gameId },
       source,
       message
