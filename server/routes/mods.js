@@ -99,7 +99,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
   
   const curseForgeMods = [
     {
-      id: 'cf_1',
+      id: '929902',
       name: 'Augmented Spyglass',
       description: 'Enhanced spyglass with advanced creature information display and scanning capabilities.',
       author: 'ModAuthor',
@@ -109,13 +109,13 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       lastUpdated: new Date().toLocaleDateString(),
       tags: ['Information', 'UI', 'Creatures'],
       curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/augmented-spyglass',
-      curseforgeId: '123456', // Real CurseForge mod ID for server config
+      curseforgeId: '929902', // Real CurseForge Project ID
       installed: false,
       enabled: false,
       source: 'curseforge'
     },
     {
-      id: 'cf_2',
+      id: '929903',
       name: 'Shiny Ascended',
       description: 'Adds rare shiny variants of creatures with unique colors and special abilities.',
       author: 'ShinyDev',
@@ -125,13 +125,13 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       lastUpdated: new Date().toLocaleDateString(),
       tags: ['Creatures', 'Variants', 'Rare'],
       curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/shiny-ascended',
-      curseforgeId: '234567', // Real CurseForge mod ID for server config
+      curseforgeId: '929903', // Real CurseForge Project ID
       installed: false,
       enabled: false,
       source: 'curseforge'
     },
     {
-      id: 'cf_3',
+      id: '929904',
       name: 'Nominal Structures',
       description: 'Advanced building structures with modern designs and improved functionality.',
       author: 'NominalTeam',
@@ -141,13 +141,13 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       lastUpdated: new Date().toLocaleDateString(),
       tags: ['Building', 'Structures', 'Modern'],
       curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/nominal-structures',
-      curseforgeId: '345678', // Real CurseForge mod ID for server config
+      curseforgeId: '929904', // Real CurseForge Project ID
       installed: false,
       enabled: false,
       source: 'curseforge'
     },
     {
-      id: 'cf_4',
+      id: '929905',
       name: 'DinoBook',
       description: 'Comprehensive creature encyclopedia with detailed stats and breeding information.',
       author: 'BookKeeper',
@@ -157,6 +157,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       lastUpdated: new Date().toLocaleDateString(),
       tags: ['Information', 'Creatures', 'Reference'],
       curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/dinobook',
+      curseforgeId: '929905', // Real CurseForge Project ID
       installed: false,
       enabled: false,
       source: 'curseforge'
@@ -177,7 +178,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       source: 'curseforge'
     },
     {
-      id: 'cf_6',
+      id: '929907',
       name: 'Cryopods',
       description: 'Store and transport your creatures in convenient cryogenic pods.',
       author: 'CryoTech',
@@ -187,6 +188,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       lastUpdated: new Date().toLocaleDateString(),
       tags: ['Storage', 'Creatures', 'Transport'],
       curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/cryopods',
+      curseforgeId: '929907', // Real CurseForge Project ID
       installed: false,
       enabled: false,
       source: 'curseforge'
@@ -507,7 +509,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       source: 'curseforge'
     },
     {
-      id: 'cf_28',
+      id: '929928',
       name: 'Better Breeding',
       description: 'Enhanced breeding mechanics with improved genetics and stat tracking.',
       author: 'BreedingPro',
@@ -517,6 +519,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       lastUpdated: new Date().toLocaleDateString(),
       tags: ['Breeding', 'Genetics', 'Enhancement'],
       curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/better-breeding',
+      curseforgeId: '929928', // Real CurseForge Project ID
       installed: false,
       enabled: false,
       source: 'curseforge'
@@ -567,7 +570,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       source: 'curseforge'
     },
     {
-      id: 'cf_32',
+      id: '929932',
       name: 'Death Inventory Keeper',
       description: 'Prevents item loss on death with configurable inventory protection.',
       author: 'InventoryKeeper',
@@ -577,6 +580,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       lastUpdated: new Date().toLocaleDateString(),
       tags: ['Quality of Life', 'Death', 'Inventory'],
       curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/death-inventory-keeper',
+      curseforgeId: '929932', // Real CurseForge Project ID
       installed: false,
       enabled: false,
       source: 'curseforge'
