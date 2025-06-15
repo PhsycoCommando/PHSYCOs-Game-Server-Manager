@@ -2,7 +2,7 @@
   padding: 20px;
   height: 100%;
   overflow-y: auto;
-  background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(30, 30, 30, 0.95) 100%);
+  background: transparent;
   color: #fff;
 }
 
@@ -45,7 +45,7 @@
 }
 
 .feature-card {
-  background: rgba(40, 40, 40, 0.8);
+  background: rgba(40, 40, 40, 0.3);
   backdrop-filter: blur(10px);
   border-radius: 8px;
   padding: 20px;
@@ -174,7 +174,7 @@
 
 .system-info,
 .tips {
-  background: rgba(40, 40, 40, 0.8);
+  background: rgba(40, 40, 40, 0.3);
   border-radius: 8px;
   padding: 25px;
   border: 1px solid rgba(255, 255, 255, 0.1);
