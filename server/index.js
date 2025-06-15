@@ -158,88 +158,166 @@ app.post('/api/ports/generate-batch', async (req, res) => {
     }
 });
 
-// RCON Configuration for ARK: Survival Ascended
-const ARCSA_RCON_CONFIG = {
+// RCON Configuration - Global settings for single-server operation
+// Since this manager runs only one server at a time, we use a single RCON port
+const GLOBAL_RCON_CONFIG = {
     host: '127.0.0.1',
-    port: 32330,
+    port: 32330,  // Global RCON port - no conflicts since only one server runs at a time
     password: '420',
 };
 
-// RCON Configuration for ARK: Survival Evolved
-const ARKSE_RCON_CONFIG = {
-    host: '127.0.0.1',
-    port: 32330,
-    password: '420',
-};
-
-// API endpoint to handle RCON commands for ark-sa
-app.post('/api/rcon/arksa_server', async (req, res) => {
+// Manual RCON test endpoint (bypasses readiness check)
+app.post('/api/rcon/:serverName/test', async (req, res) => {
+    const { serverName } = req.params;
     const { command } = req.body;
 
     if (!command) {
         return res.status(400).json({ message: 'RCON command is required.' });
     }
 
+    console.log(`🧪 [${serverName}] Manual RCON test - bypassing readiness check`);
+    
     let rcon;
     try {
+        // Use global RCON configuration for all servers
         rcon = new Rcon({
-            host: ARCSA_RCON_CONFIG.host,
-            port: ARCSA_RCON_CONFIG.port,
-            password: ARCSA_RCON_CONFIG.password
+            host: GLOBAL_RCON_CONFIG.host,
+            port: GLOBAL_RCON_CONFIG.port,
+            password: GLOBAL_RCON_CONFIG.password,
+            timeout: 5000 // 5 second timeout for testing
         });
 
+        console.log(`🎮 Testing RCON connection to ${serverName} on port ${GLOBAL_RCON_CONFIG.port}`);
         await rcon.connect();
+        
+        console.log(`📤 Sending test RCON command to ${serverName}: ${command}`);
         const response = await rcon.send(command);
         
-        // Also add the command and response to the console output
-        serverManager.addConsoleOutput('arksa_server', `RCON Command: ${command}`);
-        serverManager.addConsoleOutput('arksa_server', `RCON Response: ${response}`);
+        // Add the command and response to the console output
+        serverManager.addConsoleOutput(serverName, `RCON Test Command: ${command}`);
+        serverManager.addConsoleOutput(serverName, `RCON Test Response: ${response || 'Command executed successfully'}`);
         
-        res.json({ success: true, output: response });
+        console.log(`✅ RCON test successful for ${serverName}`);
+        res.json({ success: true, output: response || 'Command executed successfully', message: 'RCON test successful!' });
+        
     } catch (error) {
-        console.error(`RCON Error for arksa_server: ${error.message}`);
-        serverManager.addConsoleOutput('arksa_server', `RCON Error: ${error.message}`);
-        res.status(500).json({ success: false, message: `RCON command failed: ${error.message}` });
+        console.error(`❌ RCON Test Error for ${serverName}: ${error.message}`);
+        serverManager.addConsoleOutput(serverName, `RCON Test Error: ${error.message}`);
+        
+        let errorMessage = error.message;
+        if (error.message.includes('ECONNREFUSED')) {
+            errorMessage = `Cannot connect to RCON on port ${GLOBAL_RCON_CONFIG.port}. Server may not be ready yet.`;
+        } else if (error.message.includes('Authentication failed')) {
+            errorMessage = `RCON authentication failed. Check the RCON password.`;
+        } else if (error.message.includes('ETIMEDOUT') || error.message.includes('Timeout')) {
+            errorMessage = `RCON connection timed out. Server may still be starting.`;
+        }
+        
+        res.status(500).json({ success: false, message: `RCON test failed: ${errorMessage}` });
     } finally {
         if (rcon && rcon.connected) {
-            await rcon.end();
+            try {
+                await rcon.end();
+            } catch (endError) {
+                console.warn(`Warning: Error closing RCON test connection: ${endError.message}`);
+            }
         }
     }
 });
 
-// API endpoint to handle RCON commands for ark-se
-app.post('/api/rcon/arkse_server', async (req, res) => {
+// Dynamic RCON endpoint that works for any server
+app.post('/api/rcon/:serverName', async (req, res) => {
+    const { serverName } = req.params;
     const { command } = req.body;
 
     if (!command) {
         return res.status(400).json({ message: 'RCON command is required.' });
     }
 
-    let rcon;
-    try {
-        rcon = new Rcon({
-            host: ARKSE_RCON_CONFIG.host,
-            port: ARKSE_RCON_CONFIG.port,
-            password: ARKSE_RCON_CONFIG.password
+    // Check if server is running and RCON is ready
+    const serverStatus = serverManager.getServerStatus(serverName);
+    if (serverStatus.status === 'Stopped') {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Server is not running. Please start the server first.' 
         });
+    }
+    
+    if (!serverStatus.rconReady) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Server is still initializing. Please wait for the server to fully start before using RCON commands.' 
+        });
+    }
 
-        await rcon.connect();
-        const response = await rcon.send(command);
-        
-        // Also add the command and response to the console output
-        serverManager.addConsoleOutput('arkse_server', `RCON Command: ${command}`);
-        serverManager.addConsoleOutput('arkse_server', `RCON Response: ${response}`);
-        
-        res.json({ success: true, output: response });
-    } catch (error) {
-        console.error(`RCON Error for arkse_server: ${error.message}`);
-        serverManager.addConsoleOutput('arkse_server', `RCON Error: ${error.message}`);
-        res.status(500).json({ success: false, message: `RCON command failed: ${error.message}` });
-    } finally {
-        if (rcon && rcon.connected) {
-            await rcon.end();
+    // RCON retry configuration
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds between retries
+    
+    let rcon;
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            // Use global RCON configuration for all servers
+            rcon = new Rcon({
+                host: GLOBAL_RCON_CONFIG.host,
+                port: GLOBAL_RCON_CONFIG.port,
+                password: GLOBAL_RCON_CONFIG.password,
+                timeout: 10000 // 10 second timeout
+            });
+
+            console.log(`🎮 Attempting RCON connection to ${serverName} on port ${GLOBAL_RCON_CONFIG.port} (attempt ${attempt}/${maxRetries})`);
+            await rcon.connect();
+            
+            console.log(`📤 Sending RCON command to ${serverName}: ${command}`);
+            const response = await rcon.send(command);
+            
+            // Add the command and response to the console output
+            serverManager.addConsoleOutput(serverName, `RCON Command: ${command}`);
+            serverManager.addConsoleOutput(serverName, `RCON Response: ${response || 'Command executed successfully'}`);
+            
+            console.log(`✅ RCON command successful for ${serverName}`);
+            return res.json({ success: true, output: response || 'Command executed successfully' });
+            
+        } catch (error) {
+            lastError = error;
+            console.error(`❌ RCON Error for ${serverName} (attempt ${attempt}/${maxRetries}): ${error.message}`);
+            
+            // Close the connection if it exists
+            if (rcon && rcon.connected) {
+                try {
+                    await rcon.end();
+                } catch (endError) {
+                    console.warn(`Warning: Error closing RCON connection: ${endError.message}`);
+                }
+                rcon = null;
+            }
+            
+            // If this isn't the last attempt, wait before retrying
+            if (attempt < maxRetries) {
+                console.log(`⏳ Waiting ${retryDelay/1000} seconds before retry...`);
+                serverManager.addConsoleOutput(serverName, `RCON connection failed (attempt ${attempt}/${maxRetries}), retrying in ${retryDelay/1000} seconds...`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
         }
     }
+    
+    // All retries failed
+    console.error(`❌ All RCON attempts failed for ${serverName}: ${lastError.message}`);
+    serverManager.addConsoleOutput(serverName, `RCON Error: ${lastError.message}`);
+    
+    // Provide more helpful error messages
+    let errorMessage = lastError.message;
+    if (lastError.message.includes('ECONNREFUSED')) {
+        errorMessage = `Cannot connect to RCON on port ${GLOBAL_RCON_CONFIG.port}. Make sure the server is running and RCON is enabled.`;
+    } else if (lastError.message.includes('Authentication failed')) {
+        errorMessage = `RCON authentication failed. Check the RCON password in server configuration.`;
+    } else if (lastError.message.includes('ETIMEDOUT') || lastError.message.includes('Timeout')) {
+        errorMessage = `RCON connection timed out. Server may still be initializing - try again in a few moments.`;
+    }
+    
+    res.status(500).json({ success: false, message: `RCON command failed after ${maxRetries} attempts: ${errorMessage}` });
 });
 
 // Handle WebSocket connections
