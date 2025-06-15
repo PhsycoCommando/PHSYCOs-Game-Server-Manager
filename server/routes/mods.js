@@ -98,7 +98,7 @@ async function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 20) {
     console.log(`Fetching CurseForge mods for game ID: ${gameId}`);
     
     // Note: CurseForge API requires an API key for production use
-    // For now, we'll return mock data that represents what CurseForge would return
+    // For now, we'll return expanded mock data representing popular ASA mods
     const mockCurseForgeMods = [
       {
         id: 'cf_1',
@@ -291,6 +291,201 @@ async function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 20) {
         installed: false,
         enabled: false,
         source: 'curseforge'
+      },
+      {
+        id: 'cf_13',
+        name: 'Dino Storage v2 ASA',
+        description: 'Store your dinosaurs in soul balls for easy transport and management.',
+        author: 'AngrySaltire',
+        downloads: 145000,
+        rating: 4.6,
+        size: '28.4 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Dinosaurs', 'Storage', 'Quality of Life'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/dino-storage-v2',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_14',
+        name: 'Eco Trees ASA',
+        description: 'Decorative trees and foliage to beautify your base and surroundings.',
+        author: 'EcoModder',
+        downloads: 89000,
+        rating: 4.3,
+        size: '42.1 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Decoration', 'Building', 'Environment'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/eco-trees',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_15',
+        name: 'Super Structures ASA',
+        description: 'Advanced building structures with glass, elevators, and modern elements.',
+        author: 'eco',
+        downloads: 167000,
+        rating: 4.7,
+        size: '55.3 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Building', 'Structures', 'Modern'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/super-structures',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_16',
+        name: 'Immersive Taming ASA',
+        description: 'Realistic taming mechanics with feeding troughs and improved AI.',
+        author: 'Pelayori',
+        downloads: 76000,
+        rating: 4.2,
+        size: '19.7 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Taming', 'Realism', 'Dinosaurs'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/immersive-taming',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_17',
+        name: 'Gaia ASA',
+        description: 'New creatures, items, and gameplay mechanics for enhanced survival.',
+        author: 'Gaia Team',
+        downloads: 134000,
+        rating: 4.5,
+        size: '78.9 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Creatures', 'Content', 'Survival'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/gaia',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_18',
+        name: 'Primal Fear ASA',
+        description: 'Challenging new creatures and bosses for experienced players.',
+        author: 'Primal Fear Team',
+        downloads: 98000,
+        rating: 4.4,
+        size: '156.2 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Creatures', 'Bosses', 'Challenge'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/primal-fear',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_19',
+        name: 'Ark Additions ASA',
+        description: 'Lore-friendly creatures that fit seamlessly into the ARK universe.',
+        author: 'Garuga123',
+        downloads: 187000,
+        rating: 4.8,
+        size: '89.4 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Creatures', 'Lore', 'Official-Style'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/ark-additions',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_20',
+        name: 'Crystal Isles Dino Collection ASA',
+        description: 'Unique creatures inspired by the Crystal Isles map.',
+        author: 'Crystal Team',
+        downloads: 67000,
+        rating: 4.1,
+        size: '45.6 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Creatures', 'Crystal Isles', 'Map-Specific'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/crystal-isles-dinos',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_21',
+        name: 'Utilities Plus ASA',
+        description: 'Quality of life improvements and utility items for better gameplay.',
+        author: 'UtilityMod',
+        downloads: 112000,
+        rating: 4.3,
+        size: '33.7 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Quality of Life', 'Utilities', 'Tools'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/utilities-plus',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_22',
+        name: 'Steampunk ASA',
+        description: 'Victorian-era steampunk technology and aesthetics for ARK.',
+        author: 'SteamPunk Team',
+        downloads: 54000,
+        rating: 4.0,
+        size: '67.8 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Steampunk', 'Technology', 'Aesthetic'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/steampunk',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_23',
+        name: 'Kibble Plus ASA',
+        description: 'Expanded kibble recipes and taming food options.',
+        author: 'KibbleMaster',
+        downloads: 43000,
+        rating: 3.9,
+        size: '12.3 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Taming', 'Food', 'Recipes'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/kibble-plus',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_24',
+        name: 'Shiny Dinos ASA',
+        description: 'Rare shiny variants of dinosaurs with special abilities.',
+        author: 'ShinyHunter',
+        downloads: 78000,
+        rating: 4.2,
+        size: '24.5 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Dinosaurs', 'Rare', 'Variants'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/shiny-dinos',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
+      },
+      {
+        id: 'cf_25',
+        name: 'Advanced Rafts ASA',
+        description: 'Build massive floating bases with improved raft mechanics.',
+        author: 'RaftBuilder',
+        downloads: 61000,
+        rating: 4.1,
+        size: '18.9 MB',
+        lastUpdated: new Date().toLocaleDateString(),
+        tags: ['Building', 'Rafts', 'Naval'],
+        curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/advanced-rafts',
+        installed: false,
+        enabled: false,
+        source: 'curseforge'
       }
     ];
 
@@ -307,7 +502,7 @@ async function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 20) {
     }
 
     console.log(`Returning ${filteredMods.length} CurseForge mods`);
-    return filteredMods.slice(0, pageSize);
+    return filteredMods.slice(0, Math.min(pageSize, 50)); // Show up to 50 mods
 
   } catch (error) {
     console.error('Error fetching CurseForge mods:', error.message);
@@ -456,7 +651,8 @@ router.get('/search', async (req, res) => {
       search = '', 
       sortBy = 'popular', 
       timeFilter = 'all',
-      page = 1 
+      page = 1,
+      pageSize = 25
     } = req.query;
 
     console.log(`Mod search request for: ${serverName}`);
@@ -485,7 +681,7 @@ router.get('/search', async (req, res) => {
     try {
       if (gameConfig.api === 'curseforge') {
         console.log(`Using CurseForge API for ${gameName} (server: ${serverName})`);
-        mods = await getCurseForgeModDetails(gameConfig.gameId, search);
+        mods = await getCurseForgeModDetails(gameConfig.gameId, search, parseInt(pageSize));
         message = mods.length > 0 ? 
           `Found ${mods.length} mods from CurseForge for ${gameName}` :
           `CurseForge API unavailable. Note: CurseForge requires an API key for production use.`;

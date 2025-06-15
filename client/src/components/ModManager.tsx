@@ -200,10 +200,7 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
     }
   };
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.target as HTMLImageElement;
-    img.src = 'https://via.placeholder.com/300x200/333333/ffffff?text=No+Image';
-  };
+
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {
@@ -216,25 +213,15 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
 
   const renderModCard = (mod: Mod) => (
     <div key={mod.id} className="mod-card">
-      <div className="mod-image-container">
-        <img 
-          src={mod.image} 
-          alt={mod.name}
-          className="mod-image"
-          onError={handleImageError}
-          loading="lazy"
-        />
-        <div className="mod-rating">
-          <span className="rating-stars">★</span>
-          <span>{mod.rating.toFixed(1)}</span>
-        </div>
-      </div>
-      
       <div className="mod-content">
         <div className="mod-header">
           <h3 className="mod-title">{mod.name}</h3>
-          <span className="mod-author">by {mod.author}</span>
+          <div className="mod-rating">
+            <span className="rating-stars">★</span>
+            <span>{mod.rating.toFixed(1)}</span>
+          </div>
         </div>
+        <span className="mod-author">by {mod.author}</span>
         
         <p className="mod-description">{mod.description}</p>
         
