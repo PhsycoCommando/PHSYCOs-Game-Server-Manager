@@ -51,10 +51,10 @@ body {
     height: 100vh;
     color: #fff;
     width: 100%;
-    max-width: 1400px;
+    max-width: none; /* Remove max-width constraint */
     position: relative;
     z-index: 1;
-    padding: 0 20px;
+    padding: 0 10px; /* Reduce padding */
     box-sizing: border-box;
     /* Make app container nearly transparent */
     background-color: transparent;
@@ -139,15 +139,17 @@ body {
     overflow: hidden;
     /* Make content area transparent */
     background-color: transparent;
+    min-height: 0; /* Allow flex shrinking */
 }
 
 /* Sidebar - Make nearly transparent except for server cards */
 .sidebar {
     width: 250px;
     background-color: transparent;
-    padding: 20px;
+    padding: 10px; /* Reduce padding */
     overflow-y: auto;
     border-right: none;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .sidebar h2, .sidebar h3 {
@@ -168,10 +170,11 @@ body {
 /* Main content area - Make transparent */
 .main {
     flex: 1;
-    padding: 20px;
+    padding: 10px; /* Reduce padding */
     background-color: transparent;
     overflow-y: auto;
     box-shadow: none;
+    min-width: 0; /* Allow flex shrinking */
 }
 
 /* Content area headers - Add banner backgrounds */

@@ -30,6 +30,22 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
   const [installedMods, setInstalledMods] = useState<Mod[]>([]);
   const [activeTab, setActiveTab] = useState<'browse' | 'installed'>('browse');
 
+  // Games that support mods
+  const supportedGames = ['arksa_server', 'arkse_server', 'valheim_server', 'project_zomboid_server'];
+  const isModSupported = supportedGames.includes(selectedServer);
+
+  // Game display names
+  const gameNames: { [key: string]: string } = {
+    'arksa_server': 'ARK: Survival Ascended',
+    'arkse_server': 'ARK: Survival Evolved', 
+    'valheim_server': 'Valheim',
+    'project_zomboid_server': 'Project Zomboid'
+  };
+
+  const getGameDisplayName = () => {
+    return gameNames[selectedServer] || selectedServer;
+  };
+
   // Mock data for development - will be replaced with real API calls
   const mockMods: Mod[] = [
     {
@@ -80,20 +96,22 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
   ];
 
   useEffect(() => {
-    loadMods();
-  }, [searchTerm, sortBy, timeFilter]);
+    if (isModSupported) {
+      loadMods();
+    }
+  }, [searchTerm, sortBy, timeFilter, selectedServer]);
 
   const loadMods = async () => {
     setLoading(true);
     try {
-      // Call the real API instead of using mock data
+      // Call the real API with serverName parameter
       const params = new URLSearchParams({
         query: searchTerm,
         sortBy,
         timeFilter
       });
       
-      const response = await fetch(`/api/mods/search?${params}`);
+      const response = await fetch(`/api/mods/search/${selectedServer}?${params}`);
       const data = await response.json();
       
       if (response.ok) {
@@ -101,15 +119,15 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
         setInstalledMods(data.mods?.filter((mod: Mod) => mod.installed) || []);
       } else {
         console.error('Error loading mods:', data.error);
-        // Fallback to mock data if API fails
-        setMods(mockMods);
-        setInstalledMods(mockMods.filter((mod: Mod) => mod.installed));
+        // Fallback to empty array if API fails
+        setMods([]);
+        setInstalledMods([]);
       }
     } catch (error) {
       console.error('Error loading mods:', error);
-      // Fallback to mock data if API fails
-      setMods(mockMods);
-      setInstalledMods(mockMods.filter((mod: Mod) => mod.installed));
+      // Fallback to empty array if API fails
+      setMods([]);
+      setInstalledMods([]);
     } finally {
       setLoading(false);
     }
@@ -284,94 +302,118 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
   return (
     <div className="mod-manager">
       <div className="mod-manager-header">
-        <h2>🎮 Mod Manager - {selectedServer}</h2>
-        <p>Browse, install, and manage mods for your ARK server</p>
+        <h2>🎮 Mod Manager - {getGameDisplayName()}</h2>
+        <p>Browse, install, and manage mods for your {getGameDisplayName()} server</p>
       </div>
 
-      <div className="mod-tabs">
-        <button 
-          className={`tab-btn ${activeTab === 'browse' ? 'active' : ''}`}
-          onClick={() => setActiveTab('browse')}
-        >
-          🔍 Browse Mods ({mods.length})
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'installed' ? 'active' : ''}`}
-          onClick={() => setActiveTab('installed')}
-        >
-          📦 Installed Mods ({installedMods.length})
-        </button>
-      </div>
-
-      {activeTab === 'browse' && (
+      {!isModSupported ? (
+        <div className="empty-state">
+          <h3>🚫 Mod Support Not Available</h3>
+          <p>
+            {getGameDisplayName()} doesn't currently support mods through this manager, 
+            or mod support hasn't been implemented yet.
+          </p>
+          <p>
+            <strong>Supported Games:</strong><br/>
+            • ARK: Survival Ascended (Steam Workshop)<br/>
+            • ARK: Survival Evolved (Steam Workshop)<br/>
+            • Valheim (Nexus Mods / Thunderstore)<br/>
+            • Project Zomboid (Steam Workshop)
+          </p>
+        </div>
+      ) : (
         <>
-          <div className="mod-controls">
-            <div className="search-section">
-              <input
-                type="text"
-                placeholder="Search mods by name, description, or tags..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
-              />
-            </div>
-            
-            <div className="filter-section">
-              <select 
-                value={sortBy} 
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="filter-select"
-              >
-                <option value="popular">Most Popular</option>
-                <option value="recent">Recently Updated</option>
-                <option value="rating">Highest Rated</option>
-                <option value="name">Alphabetical</option>
-              </select>
-              
-              <select 
-                value={timeFilter} 
-                onChange={(e) => setTimeFilter(e.target.value as any)}
-                className="filter-select"
-              >
-                <option value="all">All Time</option>
-                <option value="month">Past Month</option>
-                <option value="week">Past Week</option>
-              </select>
-            </div>
+          <div className="mod-tabs">
+            <button 
+              className={`tab-btn ${activeTab === 'browse' ? 'active' : ''}`}
+              onClick={() => setActiveTab('browse')}
+            >
+              🔍 Browse Mods ({mods.length})
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'installed' ? 'active' : ''}`}
+              onClick={() => setActiveTab('installed')}
+            >
+              📦 Installed Mods ({installedMods.length})
+            </button>
           </div>
 
-          {loading ? (
-            <div className="loading-state">
-              <div className="spinner"></div>
-              <p>Loading mods...</p>
-            </div>
-          ) : (
-            <div className="mod-grid">
-              {mods.map(renderModCard)}
+          {activeTab === 'browse' && (
+            <>
+              <div className="mod-controls">
+                <div className="search-section">
+                  <input
+                    type="text"
+                    placeholder={`Search ${getGameDisplayName()} mods by name, description, or tags...`}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="search-input"
+                  />
+                </div>
+                
+                <div className="filter-section">
+                  <select 
+                    value={sortBy} 
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="filter-select"
+                  >
+                    <option value="popular">Most Popular</option>
+                    <option value="recent">Recently Updated</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="name">Alphabetical</option>
+                  </select>
+                  
+                  <select 
+                    value={timeFilter} 
+                    onChange={(e) => setTimeFilter(e.target.value as any)}
+                    className="filter-select"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="month">Past Month</option>
+                    <option value="week">Past Week</option>
+                  </select>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>Loading {getGameDisplayName()} mods...</p>
+                </div>
+              ) : mods.length === 0 ? (
+                <div className="empty-state">
+                  <h3>No mods found</h3>
+                  <p>Try adjusting your search terms or filters.</p>
+                </div>
+              ) : (
+                <div className="mod-grid">
+                  {mods.map(renderModCard)}
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'installed' && (
+            <div className="installed-mods">
+              {installedMods.length === 0 ? (
+                <div className="empty-state">
+                  <h3>No mods installed</h3>
+                  <p>Browse the mod library to install your first {getGameDisplayName()} mod!</p>
+                  <button 
+                    className="btn btn-primary"
+                    onClick={() => setActiveTab('browse')}
+                  >
+                    🔍 Browse Mods
+                  </button>
+                </div>
+              ) : (
+                <div className="mod-grid">
+                  {installedMods.map(renderModCard)}
+                </div>
+              )}
             </div>
           )}
         </>
-      )}
-
-      {activeTab === 'installed' && (
-        <div className="installed-mods">
-          {installedMods.length === 0 ? (
-            <div className="empty-state">
-              <h3>No mods installed</h3>
-              <p>Browse the mod library to install your first mod!</p>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setActiveTab('browse')}
-              >
-                🔍 Browse Mods
-              </button>
-            </div>
-          ) : (
-            <div className="mod-grid">
-              {installedMods.map(renderModCard)}
-            </div>
-          )}
-        </div>
       )}
     </div>
   );
