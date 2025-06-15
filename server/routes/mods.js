@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
 // API Configuration
 const STEAM_API_BASE = 'https://api.steampowered.com';
@@ -107,6 +109,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       lastUpdated: new Date().toLocaleDateString(),
       tags: ['Information', 'UI', 'Creatures'],
       curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/augmented-spyglass',
+      curseforgeId: '123456', // Real CurseForge mod ID for server config
       installed: false,
       enabled: false,
       source: 'curseforge'
@@ -122,6 +125,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       lastUpdated: new Date().toLocaleDateString(),
       tags: ['Creatures', 'Variants', 'Rare'],
       curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/shiny-ascended',
+      curseforgeId: '234567', // Real CurseForge mod ID for server config
       installed: false,
       enabled: false,
       source: 'curseforge'
@@ -137,6 +141,7 @@ function getCurseForgeModDetails(gameId, searchTerm = '', pageSize = 50) {
       lastUpdated: new Date().toLocaleDateString(),
       tags: ['Building', 'Structures', 'Modern'],
       curseforgeUrl: 'https://www.curseforge.com/ark-survival-ascended/mods/nominal-structures',
+      curseforgeId: '345678', // Real CurseForge mod ID for server config
       installed: false,
       enabled: false,
       source: 'curseforge'
@@ -733,7 +738,7 @@ router.get('/search', async (req, res) => {
     const { 
       serverName = 'ARK: Survival Evolved', 
       search = '', 
-      sortBy = 'popular', 
+      sortBy = 'alphabetical', 
       timeFilter = 'all',
       page = 1,
       pageSize = 50
@@ -852,6 +857,26 @@ router.get('/search', async (req, res) => {
       message = `${gameConfig.api} API error. Showing example mods instead.`;
     }
 
+    // Check installation status for each mod
+    try {
+      if (serverName && (serverName.includes('arksa_') || serverName.includes('arkse_'))) {
+        const configContent = readServerConfig(serverName);
+        const installedModIds = parseActiveMods(configContent);
+        
+        // Update installation status for each mod
+        mods = mods.map(mod => ({
+          ...mod,
+          installed: installedModIds.includes(mod.curseforgeId) || installedModIds.includes(mod.id),
+          enabled: installedModIds.includes(mod.curseforgeId) || installedModIds.includes(mod.id)
+        }));
+        
+        console.log(`Updated installation status for ${mods.length} mods. Installed: ${installedModIds.length}`);
+      }
+    } catch (configError) {
+      console.warn('Could not check installation status:', configError.message);
+      // Continue without installation status - mods will show as not installed
+    }
+
     console.log(`Returning ${mods.length} mods for ${gameName} (server: ${serverName}) from ${source}`);
 
     res.json({
@@ -967,6 +992,333 @@ router.get('/:server/installed', async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to get installed mods',
       message: error.message
+    });
+  }
+});
+
+// Helper function to get server config path
+function getServerConfigPath(serverName) {
+  const serverMap = {
+    'arksa_server': 'arksa_server/ShooterGame/Saved/Config/WindowsServer/GameUserSettings.ini',
+    'arkse_server': 'arkse_server/ShooterGame/Saved/Config/WindowsServer/GameUserSettings.ini'
+  };
+  
+  const configPath = serverMap[serverName];
+  if (!configPath) {
+    throw new Error(`Unknown server: ${serverName}`);
+  }
+  
+  // Get the absolute path from the workspace root
+  const workspaceRoot = path.resolve(__dirname, '../../../');
+  return path.join(workspaceRoot, configPath);
+}
+
+// Helper function to read server config
+function readServerConfig(serverName) {
+  const configPath = getServerConfigPath(serverName);
+  
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Config file not found: ${configPath}`);
+  }
+  
+  return fs.readFileSync(configPath, 'utf8');
+}
+
+// Helper function to write server config
+function writeServerConfig(serverName, content) {
+  const configPath = getServerConfigPath(serverName);
+  
+  // Create backup
+  const backupPath = configPath + '.backup.' + Date.now();
+  fs.copyFileSync(configPath, backupPath);
+  
+  // Write new content
+  fs.writeFileSync(configPath, content, 'utf8');
+  
+  console.log(`Updated server config: ${configPath}`);
+  console.log(`Backup created: ${backupPath}`);
+}
+
+// Helper function to parse ActiveMods from config
+function parseActiveMods(configContent) {
+  const activeModsMatch = configContent.match(/^ActiveMods=(.*)$/m);
+  if (!activeModsMatch) {
+    return [];
+  }
+  
+  const modsString = activeModsMatch[1].trim();
+  if (!modsString) {
+    return [];
+  }
+  
+  return modsString.split(',').map(id => id.trim()).filter(id => id);
+}
+
+// Helper function to update ActiveMods in config
+function updateActiveMods(configContent, modIds) {
+  const modsString = modIds.join(',');
+  
+  // Check if ActiveMods line exists
+  if (configContent.includes('ActiveMods=')) {
+    // Replace existing line
+    return configContent.replace(/^ActiveMods=.*$/m, `ActiveMods=${modsString}`);
+  } else {
+    // Add ActiveMods line to [ServerSettings] section
+    const serverSettingsMatch = configContent.match(/^\[ServerSettings\]$/m);
+    if (serverSettingsMatch) {
+      const insertIndex = serverSettingsMatch.index + serverSettingsMatch[0].length;
+      return configContent.slice(0, insertIndex) + 
+             `\nActiveMods=${modsString}` + 
+             configContent.slice(insertIndex);
+    } else {
+      // Add [ServerSettings] section if it doesn't exist
+      return `[ServerSettings]\nActiveMods=${modsString}\n\n` + configContent;
+    }
+  }
+}
+
+// Get installed mods for a server
+router.get('/installed/:serverName', (req, res) => {
+  try {
+    const { serverName } = req.params;
+    
+    console.log(`Getting installed mods for server: ${serverName}`);
+    
+    const configContent = readServerConfig(serverName);
+    const installedModIds = parseActiveMods(configContent);
+    
+    // Get mod details for installed mods
+    const allMods = getCurseForgeModDetails(2430, '', 100); // Get all mods
+    
+    // Create a map for quick lookup
+    const modMap = new Map();
+    allMods.forEach(mod => {
+      modMap.set(mod.curseforgeId || mod.id, mod);
+    });
+    
+    // Build installed mods array in the correct order
+    const installedMods = installedModIds.map(modId => {
+      const mod = modMap.get(modId);
+      if (mod) {
+        return {
+          ...mod,
+          installed: true,
+          enabled: true // All installed mods are enabled in ARK
+        };
+      }
+      // If mod not found in our list, create a placeholder
+      return {
+        id: modId,
+        curseforgeId: modId,
+        name: `Unknown Mod (${modId})`,
+        description: 'This mod is installed but not in our database.',
+        author: 'Unknown',
+        downloads: 0,
+        rating: 0,
+        size: 'Unknown',
+        lastUpdated: 'Unknown',
+        tags: ['Unknown'],
+        curseforgeUrl: `https://www.curseforge.com/ark-survival-ascended/mods/${modId}`,
+        installed: true,
+        enabled: true,
+        source: 'curseforge'
+      };
+    }).filter(Boolean);
+    
+    res.json({
+      success: true,
+      serverName,
+      installedMods,
+      installedModIds,
+      count: installedMods.length
+    });
+    
+  } catch (error) {
+    console.error('Error getting installed mods:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Install a mod
+router.post('/install', (req, res) => {
+  try {
+    const { serverName, modId, curseforgeId } = req.body;
+    
+    if (!serverName || (!modId && !curseforgeId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'serverName and modId or curseforgeId are required'
+      });
+    }
+    
+    console.log(`Installing mod ${modId || curseforgeId} for server: ${serverName}`);
+    
+    const configContent = readServerConfig(serverName);
+    const currentMods = parseActiveMods(configContent);
+    
+    // Use curseforgeId if available, otherwise use modId
+    const modIdToInstall = curseforgeId || modId;
+    
+    // Check if mod is already installed
+    if (currentMods.includes(modIdToInstall)) {
+      return res.json({
+        success: true,
+        message: 'Mod is already installed',
+        modId: modIdToInstall,
+        serverName
+      });
+    }
+    
+    // Add mod to the list
+    const updatedMods = [...currentMods, modIdToInstall];
+    const updatedConfig = updateActiveMods(configContent, updatedMods);
+    
+    // Write updated config
+    writeServerConfig(serverName, updatedConfig);
+    
+    res.json({
+      success: true,
+      message: 'Mod installed successfully',
+      modId: modIdToInstall,
+      serverName,
+      installedMods: updatedMods
+    });
+    
+  } catch (error) {
+    console.error('Error installing mod:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Uninstall a mod
+router.post('/uninstall', (req, res) => {
+  try {
+    const { serverName, modId, curseforgeId } = req.body;
+    
+    if (!serverName || (!modId && !curseforgeId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'serverName and modId or curseforgeId are required'
+      });
+    }
+    
+    console.log(`Uninstalling mod ${modId || curseforgeId} for server: ${serverName}`);
+    
+    const configContent = readServerConfig(serverName);
+    const currentMods = parseActiveMods(configContent);
+    
+    // Use curseforgeId if available, otherwise use modId
+    const modIdToRemove = curseforgeId || modId;
+    
+    // Check if mod is installed
+    if (!currentMods.includes(modIdToRemove)) {
+      return res.json({
+        success: true,
+        message: 'Mod is not installed',
+        modId: modIdToRemove,
+        serverName
+      });
+    }
+    
+    // Remove mod from the list
+    const updatedMods = currentMods.filter(id => id !== modIdToRemove);
+    const updatedConfig = updateActiveMods(configContent, updatedMods);
+    
+    // Write updated config
+    writeServerConfig(serverName, updatedConfig);
+    
+    res.json({
+      success: true,
+      message: 'Mod uninstalled successfully',
+      modId: modIdToRemove,
+      serverName,
+      installedMods: updatedMods
+    });
+    
+  } catch (error) {
+    console.error('Error uninstalling mod:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get mod installation status
+router.get('/status/:serverName/:modId', (req, res) => {
+  try {
+    const { serverName, modId } = req.params;
+    
+    const configContent = readServerConfig(serverName);
+    const installedMods = parseActiveMods(configContent);
+    
+    const isInstalled = installedMods.includes(modId);
+    
+    res.json({
+      success: true,
+      serverName,
+      modId,
+      installed: isInstalled,
+      enabled: isInstalled // In ARK, installed mods are always enabled
+    });
+    
+  } catch (error) {
+    console.error('Error checking mod status:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Reorder mods
+router.post('/reorder', (req, res) => {
+  try {
+    const { serverName, modIds } = req.body;
+    
+    if (!serverName || !Array.isArray(modIds)) {
+      return res.status(400).json({
+        success: false,
+        error: 'serverName and modIds array are required'
+      });
+    }
+    
+    console.log(`Reordering mods for server: ${serverName}`, modIds);
+    
+    const configContent = readServerConfig(serverName);
+    const currentMods = parseActiveMods(configContent);
+    
+    // Validate that all provided mod IDs are currently installed
+    const invalidMods = modIds.filter(id => !currentMods.includes(id));
+    if (invalidMods.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Some mods are not installed: ${invalidMods.join(', ')}`
+      });
+    }
+    
+    // Update config with new mod order
+    const updatedConfig = updateActiveMods(configContent, modIds);
+    writeServerConfig(serverName, updatedConfig);
+    
+    res.json({
+      success: true,
+      message: 'Mod load order updated successfully',
+      serverName,
+      modOrder: modIds
+    });
+    
+  } catch (error) {
+    console.error('Error reordering mods:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });

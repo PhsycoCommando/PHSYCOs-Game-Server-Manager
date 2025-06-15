@@ -17,6 +17,7 @@ interface Mod {
   source: string;
   installed: boolean;
   enabled: boolean;
+  curseforgeId?: string;
 }
 
 interface ModManagerProps {
@@ -33,6 +34,8 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
   const [sortBy, setSortBy] = useState('popular');
   const [timeFilter, setTimeFilter] = useState('all');
   const [message, setMessage] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [reordering, setReordering] = useState(false);
 
   // Load mods when component mounts or server changes
   useEffect(() => {
@@ -81,16 +84,16 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/mods/${encodeURIComponent(selectedServer)}/installed`);
+      const response = await fetch(`/api/mods/installed/${encodeURIComponent(selectedServer)}`);
       const data = await response.json();
       
       if (!response.ok) {
         throw new Error(data.message || 'Failed to load installed mods');
       }
 
-      setInstalledMods(data.mods || []);
-      if (data.message) {
-        setMessage(data.message);
+      setInstalledMods(data.installedMods || []);
+      if (data.count !== undefined) {
+        setMessage(`Found ${data.count} installed mods`);
       }
     } catch (err) {
       console.error('Error loading installed mods:', err);
@@ -101,13 +104,18 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
     }
   };
 
-  const handleInstallMod = async (modId: string) => {
+  const handleInstallMod = async (mod: Mod) => {
     try {
-      const response = await fetch(`/api/mods/${encodeURIComponent(selectedServer)}/install/${modId}`, {
+      const response = await fetch('/api/mods/install', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          serverName: selectedServer,
+          modId: mod.id,
+          curseforgeId: mod.curseforgeId || mod.id
+        }),
       });
 
       const data = await response.json();
@@ -116,21 +124,21 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
         throw new Error(data.message || 'Failed to install mod');
       }
 
-      // Update mod status
+      // Update mod status in browse list
       setMods(prevMods => 
-        prevMods.map(mod => 
-          mod.id === modId 
-            ? { ...mod, installed: true, enabled: true }
-            : mod
+        prevMods.map(m => 
+          m.id === mod.id 
+            ? { ...m, installed: true, enabled: true }
+            : m
         )
       );
 
       // Show success message
-      setMessage(`Installing mod... This may take a few minutes.`);
+      setMessage(`${mod.name} installed successfully! Restart server to load the mod.`);
       
       // Refresh installed mods if on that tab
       if (activeTab === 'installed') {
-        setTimeout(() => loadInstalledMods(), 2000);
+        setTimeout(() => loadInstalledMods(), 1000);
       }
     } catch (err) {
       console.error('Error installing mod:', err);
@@ -138,10 +146,18 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
     }
   };
 
-  const handleUninstallMod = async (modId: string) => {
+  const handleUninstallMod = async (mod: Mod) => {
     try {
-      const response = await fetch(`/api/mods/${encodeURIComponent(selectedServer)}/uninstall/${modId}`, {
-        method: 'DELETE',
+      const response = await fetch('/api/mods/uninstall', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          serverName: selectedServer,
+          modId: mod.id,
+          curseforgeId: mod.curseforgeId || mod.id
+        }),
       });
 
       const data = await response.json();
@@ -150,57 +166,93 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
         throw new Error(data.message || 'Failed to uninstall mod');
       }
 
-      // Update mod status
+      // Update mod status in browse list
       setMods(prevMods => 
-        prevMods.map(mod => 
-          mod.id === modId 
-            ? { ...mod, installed: false, enabled: false }
-            : mod
+        prevMods.map(m => 
+          m.id === mod.id 
+            ? { ...m, installed: false, enabled: false }
+            : m
         )
       );
 
+      // Remove from installed mods list
       setInstalledMods(prevMods => 
-        prevMods.filter(mod => mod.id !== modId)
+        prevMods.filter(m => m.id !== mod.id)
       );
 
-      setMessage('Mod uninstalled successfully');
+      setMessage(`${mod.name} uninstalled successfully! Restart server to apply changes.`);
     } catch (err) {
       console.error('Error uninstalling mod:', err);
       setError(err instanceof Error ? err.message : 'Failed to uninstall mod');
     }
   };
 
-  const handleToggleMod = async (modId: string, enabled: boolean) => {
+  const handleReorderMods = async (newOrder: Mod[]) => {
     try {
-      const response = await fetch(`/api/mods/${encodeURIComponent(selectedServer)}/toggle/${modId}`, {
-        method: 'PATCH',
+      setReordering(true);
+      
+      // Extract mod IDs in the new order
+      const modIds = newOrder.map(mod => mod.curseforgeId || mod.id);
+      
+      const response = await fetch('/api/mods/reorder', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ enabled }),
+        body: JSON.stringify({
+          serverName: selectedServer,
+          modIds: modIds
+        }),
       });
 
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to toggle mod');
+        throw new Error(data.message || 'Failed to reorder mods');
       }
 
-      // Update mod status
-      const updateMod = (mod: Mod) => 
-        mod.id === modId ? { ...mod, enabled } : mod;
-
-      setMods(prevMods => prevMods.map(updateMod));
-      setInstalledMods(prevMods => prevMods.map(updateMod));
-
-      setMessage(`Mod ${enabled ? 'enabled' : 'disabled'} successfully`);
+      // Update local state with new order
+      setInstalledMods(newOrder);
+      setMessage('Mod load order updated successfully! Restart server to apply changes.');
+      
     } catch (err) {
-      console.error('Error toggling mod:', err);
-      setError(err instanceof Error ? err.message : 'Failed to toggle mod');
+      console.error('Error reordering mods:', err);
+      setError(err instanceof Error ? err.message : 'Failed to reorder mods');
+    } finally {
+      setReordering(false);
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    const newOrder = [...installedMods];
+    const draggedMod = newOrder[draggedIndex];
+    
+    // Remove dragged mod from its current position
+    newOrder.splice(draggedIndex, 1);
+    
+    // Insert dragged mod at new position
+    newOrder.splice(dropIndex, 0, draggedMod);
+    
+    setDraggedIndex(null);
+    handleReorderMods(newOrder);
+  };
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {
@@ -210,6 +262,55 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
     }
     return num.toString();
   };
+
+  const renderInstalledModItem = (mod: Mod, index: number) => (
+    <div
+      key={mod.id}
+      className={`installed-mod-item ${draggedIndex === index ? 'dragging' : ''}`}
+      draggable
+      onDragStart={(e) => handleDragStart(e, index)}
+      onDragOver={handleDragOver}
+      onDrop={(e) => handleDrop(e, index)}
+    >
+      <div className="mod-drag-handle">
+        <span className="drag-icon">⋮⋮</span>
+      </div>
+      
+      <div className="mod-order-number">
+        {index + 1}
+      </div>
+      
+      <div className="mod-info">
+        <div className="mod-name-author">
+          <h4 className="mod-name">{mod.name}</h4>
+          <span className="mod-author">by {mod.author}</span>
+        </div>
+        <div className="mod-stats-compact">
+          <span className="mod-downloads">{formatNumber(mod.downloads)} downloads</span>
+          <span className="mod-size">{mod.size}</span>
+          <span className="mod-rating">★ {mod.rating.toFixed(1)}</span>
+        </div>
+      </div>
+      
+      <div className="mod-actions-compact">
+        <button
+          className="mod-btn mod-btn-uninstall"
+          onClick={() => handleUninstallMod(mod)}
+          disabled={reordering}
+        >
+          Uninstall
+        </button>
+        <a
+          href={mod.source === 'curseforge' ? mod.curseforgeUrl : mod.steamUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mod-btn mod-btn-view"
+        >
+          View
+        </a>
+      </div>
+    </div>
+  );
 
   const renderModCard = (mod: Mod) => (
     <div key={mod.id} className="mod-card">
@@ -250,24 +351,16 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
         
         <div className="mod-actions">
           {mod.installed ? (
-            <>
-              <button
-                className={`mod-btn ${mod.enabled ? 'mod-btn-disable' : 'mod-btn-enable'}`}
-                onClick={() => handleToggleMod(mod.id, !mod.enabled)}
-              >
-                {mod.enabled ? 'Disable' : 'Enable'}
-              </button>
-              <button
-                className="mod-btn mod-btn-uninstall"
-                onClick={() => handleUninstallMod(mod.id)}
-              >
-                Uninstall
-              </button>
-            </>
+            <button
+              className="mod-btn mod-btn-uninstall"
+              onClick={() => handleUninstallMod(mod)}
+            >
+              Uninstall
+            </button>
           ) : (
             <button
               className="mod-btn mod-btn-install"
-              onClick={() => handleInstallMod(mod.id)}
+              onClick={() => handleInstallMod(mod)}
             >
               Install
             </button>
@@ -355,16 +448,26 @@ const ModManager: React.FC<ModManagerProps> = ({ selectedServer }) => {
         </div>
       )}
 
+      {activeTab === 'installed' && installedMods.length > 0 && (
+        <div className="load-order-info">
+          <span className="info-icon">🔄</span>
+          <span>
+            Drag and drop mods to reorder them. Load order is important - some mods require specific positioning to work correctly.
+            Changes will be saved automatically and applied on server restart.
+          </span>
+        </div>
+      )}
+
       {loading ? (
         <div className="mod-loading">
           <div className="loading-spinner"></div>
           <p>Loading mods...</p>
         </div>
       ) : (
-        <div className="mod-grid">
+        <div className={`mod-grid ${activeTab === 'installed' ? 'installed-view' : ''} ${reordering ? 'reordering' : ''}`}>
           {activeTab === 'browse' 
             ? mods.map(renderModCard)
-            : installedMods.map(renderModCard)
+            : installedMods.map((mod, index) => renderInstalledModItem(mod, index))
           }
           
           {((activeTab === 'browse' && mods.length === 0) || 
